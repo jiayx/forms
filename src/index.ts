@@ -1,22 +1,17 @@
 import { Hono } from 'hono'
+import type { Context } from 'hono'
 import { cors } from 'hono/cors'
-import type { D1Database } from '@cloudflare/workers-types'
-import { PrismaClient } from "@prisma/client"
-import { PrismaD1 } from '@prisma/adapter-d1'
-import { Context } from 'hono'
+import type { EnvBindings } from './db'
+import { getDb } from './db'
 import { buildValidator } from './utils/validate'
+import { adminRoutes } from './routes/admin'
 
 // Bindings available in the Worker
-interface Env {
-  DB: D1Database
+interface Env extends EnvBindings {
+  JWT_SECRET: string
 }
 
 const app = new Hono<{ Bindings: Env }>()
-
-function db(c: Context<{Bindings: Env}>): PrismaClient {
-  const adapter = new PrismaD1(c.env.DB)
-  return new PrismaClient({ adapter })
-}
 
 //---------------------------------------------------------
 // Utility – lookup form + tenant (slug + origin)
@@ -25,7 +20,7 @@ async function getContext(c: Context<{Bindings: Env}>, slug: string, apiKey: str
   if (!slug || !apiKey) {
     return null
   }
-  return await db(c).form.findFirst({
+  return await getDb(c).form.findFirst({
     where: {
       slug: slug,
       tenant: {
@@ -43,7 +38,7 @@ async function getTenant(c: Context<{Bindings: Env}>, apiKey: string) {
   if (!apiKey) {
     return null
   }
-  return await db(c).tenant.findUnique({
+  return await getDb(c).tenant.findUnique({
     where: {
       apiKey: apiKey,
     },
@@ -107,7 +102,7 @@ app.post('/api/forms/:slug/submit', async c => {
     data[field.name] = body[field.name]
   }
 
-  await db(c).submission.create({
+  await getDb(c).submission.create({
     data: {
       formId: form.id,
       ip: ip,
@@ -138,5 +133,8 @@ app.get('/api/forms/:slug', async c => {
   }
   return c.json({ form })
 })
+
+
+app.route('/admin', adminRoutes)
 
 export default app
