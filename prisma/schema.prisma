@@ -1,0 +1,87 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../src/generated/prisma"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite" // d1 is sql base database
+}
+
+model Tenant {
+  id                String   @id @default(cuid())
+  name              String
+  domain            String
+  apiKey            String   @unique // 用于 API 认证
+  allowedOrigins    String
+  forms             Form[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+/// 一个 Tenant 下可以有多个 Form
+model Form {
+  id          String   @id @default(cuid())
+  tenant      Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId    String
+  name        String
+  slug        String   // URL 区分，比如 "contact-us"
+  description String?
+  notifyEmails String // 提交后通知的邮箱列表
+  fields      Field[]                  // 这一行：Form.fields 表示这个表单有哪些「字段定义」
+  submissions Submission[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([tenantId, slug])
+}
+
+/// Field 表示一个表单里要让用户填写的字段，包括名字、类型、校验规则、顺序等等
+model Field {
+  id         String @id @default(cuid())
+  form       Form   @relation(fields: [formId], references: [id])
+  formId     String
+  name       String     // 前端 <input name="..." />
+  label      String     // 给后台管理员看的字段标签
+  type       String     // "text" | "email" | "select" | "textarea" | ...
+  required   Boolean    @default(false)
+  options    Json?      // select/radio 的选项数组：[{ label, value }, ...]
+  placeholder String? // 输入框的占位符文本
+  order      Int        @default(0)
+  validationRegex String? // 用于校验的正则表达式，比如 email 格式
+  templateId String? // 如果是从模板创建的字段，可以关联到 FieldTemplate
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  @@index([formId]) // 可以按表单和顺序查询
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  form        Form     @relation(fields: [formId], references: [id])
+  formId      String
+  ip          String
+  userAgent   String?
+  data        Json     // 存用户提交的 key/value 对象
+  createdAt   DateTime @default(now())
+
+  @@index([formId]) // 可以按表单和时间查询
+}
+
+model FieldTemplate {
+  id          String   @id @default(cuid())
+  name        String   // 字段名称
+  label String? // 字段标签，给后台管理员看的
+  type        String   // 模板类型，比如 "text" | "email" | "select" | "textarea"
+  required    Boolean  @default(false) // 是否必填
+  options     Json?    // select/radio 的选项数组：[{ label, value }, ...]
+  placeholder String? // 输入框的占位符文本
+  order       Int      @default(0) // 字段在模板中的顺序
+  validationRegex String? // 用于校验的正则表达式，比如 email 格式
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name]) // 确保模板名称唯一
+}
