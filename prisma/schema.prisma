@@ -73,7 +73,7 @@ model Submission {
 model FieldTemplate {
   id          String   @id @default(cuid())
   name        String   // 字段名称
-  label String? // 字段标签，给后台管理员看的
+  label       String // 字段标签，给后台管理员看的
   type        String   // 模板类型，比如 "text" | "email" | "select" | "textarea"
   required    Boolean  @default(false) // 是否必填
   options     Json?    // select/radio 的选项数组：[{ label, value }, ...]
