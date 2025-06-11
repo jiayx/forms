@@ -9,8 +9,10 @@
   "dependencies": {
     "@prisma/adapter-d1": "^6.9.0",
     "@prisma/client": "^6.9.0",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^16.5.0",
     "hono": "^4.7.11",
+    "jose": "^5.10.0",
     "zod": "^3.25.56"
   },
   "devDependencies": {

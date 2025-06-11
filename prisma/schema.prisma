@@ -85,3 +85,23 @@ model FieldTemplate {
 
   @@unique([name]) // 确保模板名称唯一
 }
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  tenantId     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  lastLoginAt  DateTime?
+  refreshTokens AdminRefreshToken[]
+}
+
+model AdminRefreshToken {
+  id        String   @id @default(cuid())
+  user      AdminUser @relation(fields: [userId], references: [id])
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
