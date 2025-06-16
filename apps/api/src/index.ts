@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { adminRoutes } from './admin/route'
 import { ZodError } from 'zod/v4'
+import { apiRoutes } from './client/index'
 
 const app = new Hono()
 
@@ -21,5 +22,6 @@ app.onError((err, c) => {
 })
 
 app.route('/admin', adminRoutes)
+app.route('/api', apiRoutes)
 
 export default app
