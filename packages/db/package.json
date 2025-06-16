@@ -1,0 +1,26 @@
+{
+  "name": "@forms/db",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "gen": "drizzle-kit generate",
+    "push:local": "drizzle-kit push --config ./drizzle.local.config.ts",
+    "push:remote": "drizzle-kit push"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "drizzle-zod": "^0.8.2",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.64"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.1",
+    "drizzle-kit": "^0.31.1",
+    "drizzle-orm": "^0.44.2"
+  }
+}

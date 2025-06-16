@@ -1,0 +1,29 @@
+{
+  "name": "forms",
+  "main": "apps/api/src/index.ts",
+  "compatibility_date": "2025-04-28",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "forms",
+      "database_id": "3590e9ad-259a-4a36-8c56-90fc2c0a0c36",
+      "migrations_dir": "packages/db/migrations"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "env": {
+    "local": {
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "forms",
+          "database_id": "3590e9ad-259a-4a36-8c56-90fc2c0a0c36",
+          "migrations_dir": "packages/db/migrations"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "forms",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "api:dev": "wrangler dev",
+    "api:deploy": "pnpm --filter api run deploy",
+    "web:dev": "pnpm --filter web run dev",
+    "migrate:gen": "pnpm --filter db run gen",
+    "migrate:local": "pnpm migrate:gen && wrangler d1 migrations apply forms --env local",
+    "migrate:deploy": "pnpm migrate:gen && wrangler d1 migrations apply forms"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "devDependencies": {
+    "wrangler": "^4.20.0"
+  }
+}

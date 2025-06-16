@@ -1,0 +1,21 @@
+{
+  "name": "@forms/api",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
+  },
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20250614.0",
+    "bcryptjs": "^3.0.2",
+    "@forms/db": "workspace:*",
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.44.2",
+    "hono": "^4.7.11",
+    "jose": "^6.0.11",
+    "zod": "^3.25.64"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0"
+  }
+}
