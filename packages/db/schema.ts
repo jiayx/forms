@@ -1,6 +1,5 @@
 import { sql, relations } from 'drizzle-orm'
 import { integer, index, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
-
 import { v4 as uuidv4 } from 'uuid'
 
 export const tenants = sqliteTable('tenants', {
@@ -13,9 +12,7 @@ export const tenants = sqliteTable('tenants', {
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
 })
 
-export const forms = sqliteTable(
-  'forms',
-  {
+export const forms = sqliteTable('forms', {
     id: text('id').primaryKey().notNull().$default(() => uuidv4()),
     tenantId: text('tenant_id').notNull().references(() => tenants.id),
     name: text('name').notNull(),
@@ -28,9 +25,7 @@ export const forms = sqliteTable(
   (form) => [unique('unique_tenant_slug').on(form.tenantId, form.slug)]
 )
 
-export const fields = sqliteTable(
-  'fields',
-  {
+export const fields = sqliteTable('fields', {
     id: text('id').primaryKey().notNull().$default(() => uuidv4()),
     formId: text('form_id').notNull(),
     name: text('name').notNull(),
@@ -48,14 +43,12 @@ export const fields = sqliteTable(
   (field) => [index('idx_filed_form_id').on(field.formId)]
 )
 
-export const submissions = sqliteTable(
-  'submissions',
-  {
+export const submissions = sqliteTable('submissions', {
     id: text('id').primaryKey().notNull().$default(() => uuidv4()),
     formId: text('form_id').notNull(),
     ip: text('ip').notNull(),
     userAgent: text('user_agent'),
-    data: text('data').notNull(),
+    data: text('data', { mode: 'json' }).$type<Record<string, any>>().notNull(),
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (submission) => [index('idx_submission_form_id').on(submission.formId)]
