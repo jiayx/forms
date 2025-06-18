@@ -16,10 +16,10 @@ import { useCurrentTenant } from '@/hooks/use-tenants'
 
 export default function NewFormPage() {
   const navigate = useNavigate()
-  const { data } = useQuery<{ tenants: TenantExt[] }>('/admin/tenants')
+  const { data } = useQuery<{ tenants: TenantExt[] }>('/api/admin/tenants')
   const tenants = data?.tenants || []
 
-  const { trigger: createForm } = useMutation<FormInsertExt>('/admin/forms', 'POST')
+  const { trigger: createForm } = useMutation<FormInsertExt>('/api/admin/forms', 'POST')
 
   const { toast } = useToast()
 

@@ -22,7 +22,7 @@ export type FieldDraft = Omit<FieldInsert, 'id'> & {
 }
 
 export async function clientLoader({ params }: { params: { id: string } }) {
-  const resp = await fetcher(`/admin/forms/${params.id}`)
+  const resp = await fetcher(`/api/admin/forms/${params.id}`)
   return (await resp.json()) as { form: FormExt }
 }
 
@@ -37,11 +37,11 @@ export default function EditFormPage({
 
   const navigate = useNavigate()
 
-  const { data: fieldTemplatesData } = useQuery<{ fieldTemplates: FieldTemplateSelect[] }>(`/admin/field-templates`)
+  const { data: fieldTemplatesData } = useQuery<{ fieldTemplates: FieldTemplateSelect[] }>(`/api/admin/field-templates`)
   const fieldTemplates = fieldTemplatesData?.fieldTemplates || []
 
-  const { trigger: updateFormTrigger } = useMutation<FormUpdateExt>(`/admin/forms/${params.id}`, 'PATCH')
-  const { trigger: deleteFormTrigger } = useMutation(`/admin/forms/${params.id}`, 'DELETE')
+  const { trigger: updateFormTrigger } = useMutation<FormUpdateExt>(`/api/admin/forms/${params.id}`, 'PATCH')
+  const { trigger: deleteFormTrigger } = useMutation(`/api/admin/forms/${params.id}`, 'DELETE')
 
   const { toast } = useToast()
   const [formData, setFormData] = useState({

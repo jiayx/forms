@@ -1,6 +1,8 @@
 import useSWR from 'swr'
 import useSWRMutation from 'swr/mutation'
 import type { SWRConfiguration } from 'swr'
+import { decodeJwt } from 'jose'
+import { createLock } from '@/lib/utils'
 
 type Method = 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'GET'
 
@@ -21,7 +23,7 @@ export function composeFetch(...middlewares: FetchMiddleware[]): typeof fetch {
 }
 
 const withToken: FetchMiddleware = async (next, url, init = {}) => {
-  const token = localStorage.getItem('accessToken')
+  const token = await getToken()
   if (!token) {
     return next(url, init)
   }
@@ -29,6 +31,67 @@ const withToken: FetchMiddleware = async (next, url, init = {}) => {
     ...init,
     headers: { ...(init.headers || {}), 'X-Api-Key': `${token}` },
   })
+}
+
+const lock = createLock<string>()
+
+const getToken = async (): Promise<string> => {
+  const token = localStorage.getItem('accessToken')
+  if (!token) {
+    return ''
+  }
+
+  let needRefresh = false
+  try {
+    const { exp } = decodeJwt(token)
+    if (typeof exp !== 'number') {
+      needRefresh = true
+    } else {
+      const now = Math.floor(Date.now() / 1000)
+      needRefresh = now + 90 >= exp
+    }
+  } catch (err) {
+    // 解析失败也当作过期/无效处理
+    needRefresh = true
+  }
+
+  if (!needRefresh) {
+    return token
+  }
+
+  // 刷新 token
+  const refreshToken = localStorage.getItem('refreshToken')
+  if (!refreshToken) {
+    return token
+  }
+
+  try {
+    return await lock.acquire(async () => {
+      const resp = await fetch('/api/admin/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken }),
+      })
+      if (!resp.ok) {
+        throw new Error(`Failed to refresh token ${resp.status}`, { cause: resp })
+      }
+      const { accessToken }: { accessToken: string } = await resp.json()
+      localStorage.setItem('accessToken', accessToken)
+      return accessToken
+    })
+  } catch (err) {
+    console.error('Failed to refresh token:', err)
+    if (err instanceof Error && err.cause instanceof Response) {
+      if (err.cause.status === 401) {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        window.location.href = '/login'
+      }
+    }
+    throw err
+  }
 }
 
 const withErrorHandler: FetchMiddleware = async (next, url, init = {}) => {

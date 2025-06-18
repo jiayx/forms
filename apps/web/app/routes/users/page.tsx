@@ -13,17 +13,17 @@ import { useToast } from '@/hooks/use-toast'
 import { Plus, Eye, Edit, Trash2, Users, Shield } from 'lucide-react'
 import { useMutation, useQuery } from '@/hooks/use-rest'
 import type { AdminUserSelect, AdminUserInsert, AdminUserUpdate, TenantSelect } from '@forms/db/zod'
-import { formatDate } from '@/lib/date'
+import { formatDate } from '@/lib/utils'
 
 export default function UsersPage() {
-  const { data: usersData, mutate } = useQuery<{ users: AdminUserSelect[]; total: number }>('/admin/users')
+  const { data: usersData, mutate } = useQuery<{ users: AdminUserSelect[]; total: number }>('/api/admin/users')
   const users = usersData?.users || []
 
-  const { trigger: createUserTrigger } = useMutation<AdminUserInsert>('/admin/users', 'POST')
-  const { trigger: updateUserTrigger } = useMutation<AdminUserUpdate>('/admin/users/:id', 'PATCH')
-  const { trigger: deleteUserTrigger } = useMutation('/admin/users/:id', 'DELETE')
+  const { trigger: createUserTrigger } = useMutation<AdminUserInsert>('/api/admin/users', 'POST')
+  const { trigger: updateUserTrigger } = useMutation<AdminUserUpdate>('/api/admin/users/:id', 'PATCH')
+  const { trigger: deleteUserTrigger } = useMutation('/api/admin/users/:id', 'DELETE')
 
-  const { data: tenantsData } = useQuery<{ tenants: TenantSelect[]; total: number }>('/admin/tenants')
+  const { data: tenantsData } = useQuery<{ tenants: TenantSelect[]; total: number }>('/api/admin/tenants')
   const tenants = tenantsData?.tenants || []
 
   const { toast } = useToast()

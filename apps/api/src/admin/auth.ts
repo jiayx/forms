@@ -8,22 +8,10 @@ import { eq, lt, and } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { requireLogin } from '../middleware'
 
-const ACCESS_TTL = 60 * 60 * 24 * 14
+const ACCESS_TTL = 60 * 15
 const REFRESH_TTL = 60 * 60 * 24 * 30
 
 export const auth = new Hono<AdminEnv>()
-
-async function signAccess(user: AdminUserSelect, secret: string) {
-  const payload: any = {
-    sub: user.id,
-    role: 'admin',
-    tenantId: user.tenantId,
-  }
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime(`${ACCESS_TTL}s`)
-    .sign(new TextEncoder().encode(secret))
-}
 
 auth.post('/login', async (c) => {
   const db = drizzle(c.env.DB)
@@ -74,9 +62,13 @@ auth.get('/current', requireLogin, async (c) => {
 })
 
 auth.post('/refresh', async (c) => {
-  const { refresh } = await c.req.json()
+  const { refreshToken } = await c.req.json()
+  if (!refreshToken) {
+    return c.json({ error: 'Invalid token' }, 401)
+  }
+
   const db = drizzle(c.env.DB)
-  const token = await db.select().from(adminRefreshTokens).where(eq(adminRefreshTokens.token, refresh)).get()
+  const token = await db.select().from(adminRefreshTokens).where(eq(adminRefreshTokens.token, refreshToken)).get()
   if (!token) {
     return c.json({ error: 'Invalid token' }, 401)
   }
@@ -101,3 +93,15 @@ auth.post('/logout', async (c) => {
   await drizzle(c.env.DB).delete(adminRefreshTokens).where(eq(adminRefreshTokens.token, refreshToken))
   return c.json({})
 })
+
+async function signAccess(user: AdminUserSelect, secret: string) {
+  const payload: any = {
+    sub: user.id,
+    role: user.tenantId ? 'user' : 'admin',
+    tenantId: user.tenantId,
+  }
+  return await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime(`${ACCESS_TTL}s`)
+    .sign(new TextEncoder().encode(secret))
+}

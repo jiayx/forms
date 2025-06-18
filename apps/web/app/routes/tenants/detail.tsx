@@ -11,15 +11,16 @@ import { useToast } from '@/hooks/use-toast'
 import { Copy, Save, Trash2, ExternalLink, FileSpreadsheet, CopyIcon, ListIcon } from 'lucide-react'
 import { useQuery, useMutation } from '@/hooks/use-rest'
 import type { TenantExt, TenantUpdate } from '@forms/db/zod'
+import { formatDate } from '@/lib/utils'
 
 export default function TenantDetailPage({ params }: { params: { id: string } }) {
   const { state } = useLocation()
   const [isEditing, setIsEditing] = useState(state?.isEditing || false)
 
-  const { data, error, isLoading, mutate } = useQuery<{ tenant: TenantExt }>(`/admin/tenants/${params.id}`)
+  const { data, error, isLoading, mutate } = useQuery<{ tenant: TenantExt }>(`/api/admin/tenants/${params.id}`)
 
-  const { trigger: updateTenantTrigger } = useMutation<TenantUpdate>(`/admin/tenants/${params.id}`, 'PATCH')
-  const { trigger: deleteTenantTrigger } = useMutation(`/admin/tenants/${params.id}`, 'DELETE')
+  const { trigger: updateTenantTrigger } = useMutation<TenantUpdate>(`/api/admin/tenants/${params.id}`, 'PATCH')
+  const { trigger: deleteTenantTrigger } = useMutation(`/api/admin/tenants/${params.id}`, 'DELETE')
 
   const navigate = useNavigate()
   const { toast } = useToast()
@@ -84,16 +85,6 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
     toast({
       title: 'API Key 已复制',
       description: 'API Key 已复制到剪贴板',
-    })
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
     })
   }
 

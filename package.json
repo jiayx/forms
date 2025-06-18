@@ -7,9 +7,11 @@
     "api:dev": "wrangler dev",
     "api:deploy": "pnpm --filter api run deploy",
     "web:dev": "pnpm --filter web run dev",
+    "web:build": "pnpm --filter web run build",
     "migrate:gen": "pnpm --filter db run gen",
-    "migrate:local": "pnpm migrate:gen && wrangler d1 migrations apply forms --env local",
-    "migrate:deploy": "pnpm migrate:gen && wrangler d1 migrations apply forms"
+    "migrate:local": "pnpm migrate:gen && wrangler d1 migrations apply forms",
+    "migrate:deploy": "pnpm migrate:gen && wrangler d1 migrations apply forms --remote",
+    "deploy": "pnpm web:build && wrangler deploy --minify"
   },
   "keywords": [],
   "author": "",

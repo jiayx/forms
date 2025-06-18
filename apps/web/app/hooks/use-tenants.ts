@@ -4,7 +4,7 @@ import useSWR, { mutate } from 'swr'
 import { useUser } from './use-auth'
 
 export const useTenants = () => {
-  return useQuery<{ tenants: TenantExt[] }>('/admin/tenants', null, {
+  return useQuery<{ tenants: TenantExt[] }>('/api/admin/tenants', null, {
     dedupingInterval: 600_000,
   })
 }

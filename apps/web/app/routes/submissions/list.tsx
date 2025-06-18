@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/pagination'
 import { useQuery } from '@/hooks/use-rest'
 import type { FormSelectExt, SubmissionSelect } from '@forms/db/zod'
-import { formatDate } from '@/lib/date'
+import { formatDate } from '@/lib/utils'
 import { useDebounce } from 'use-debounce'
 import { useCurrentTenant } from '@/hooks/use-tenants'
 
@@ -33,7 +33,7 @@ export default function SubmissionsPage() {
   const { currentTenant } = useCurrentTenant()
 
   const { data: formsData } = useQuery<{ forms: FormSelectExt[]; total: number }>(
-    '/admin/forms',
+    '/api/admin/forms',
     currentTenant?.id
       ? {
           tenantId: currentTenant?.id,
@@ -49,7 +49,7 @@ export default function SubmissionsPage() {
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
 
   const { data: submissionsData, error } = useQuery<{ submissions: SubmissionSelect[]; total: number }>(
-    selectedForm ? `/admin/forms/${selectedForm}/submissions` : undefined,
+    selectedForm ? `/api/admin/forms/${selectedForm}/submissions` : undefined,
     {
       page: currentPage,
       pageSize,

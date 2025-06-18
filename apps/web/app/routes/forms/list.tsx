@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Edit, Database } from 'lucide-react'
 import { useQuery } from '@/hooks/use-rest'
 import type { FormExt, TenantExt } from '@forms/db/zod'
-import { formatDate } from '@/lib/date'
+import { formatDate } from '@/lib/utils'
 import { useCurrentTenant } from '@/hooks/use-tenants'
 
 export default function FormsPage() {
@@ -18,12 +18,12 @@ export default function FormsPage() {
   }
 
   const { data } = useQuery<{ forms: FormExt[] }>(
-    '/admin/forms',
+    '/api/admin/forms',
     currentTenant ? { tenantId: currentTenant.id } : undefined
   )
   const forms = data?.forms || []
 
-  const { data: tenantData } = useQuery<{ tenants: TenantExt[] }>('/admin/tenants')
+  const { data: tenantData } = useQuery<{ tenants: TenantExt[] }>('/api/admin/tenants')
   const tenants = tenantData?.tenants || []
 
   return (

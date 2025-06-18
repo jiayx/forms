@@ -21,7 +21,7 @@ app.onError((err, c) => {
   return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500)
 })
 
-app.route('/admin', adminRoutes)
+app.route('/api/admin', adminRoutes)
 app.route('/api', apiRoutes)
 
 export default app

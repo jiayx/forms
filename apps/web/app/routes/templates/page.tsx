@@ -34,16 +34,16 @@ const fieldTypeLabels = {
 
 export default function TemplatesPage() {
   const { data: fieldTemplatesData, mutate } = useQuery<{ fieldTemplates: FieldTemplateSelect[] }>(
-    `/admin/field-templates`
+    `/api/admin/field-templates`
   )
   const fieldTemplates = fieldTemplatesData?.fieldTemplates || []
 
-  const { trigger: addFieldTemplateTrigger } = useMutation<FieldTemplateInsert>(`/admin/field-templates`, 'POST')
+  const { trigger: addFieldTemplateTrigger } = useMutation<FieldTemplateInsert>(`/api/admin/field-templates`, 'POST')
   const { trigger: updateFieldTemplateTrigger } = useMutation<FieldTemplateUpdate>(
-    `/admin/field-templates/:id`,
+    `/api/admin/field-templates/:id`,
     'PATCH'
   )
-  const { trigger: deleteFieldTemplateTrigger } = useMutation(`/admin/field-templates/:id`, 'DELETE')
+  const { trigger: deleteFieldTemplateTrigger } = useMutation(`/api/admin/field-templates/:id`, 'DELETE')
 
   const { toast } = useToast()
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)

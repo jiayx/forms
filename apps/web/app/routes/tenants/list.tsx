@@ -20,7 +20,7 @@ import type { TenantInsert } from '@forms/db/zod'
 import { Plus, Eye, Edit, Copy, Trash, ExternalLink } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Link } from 'react-router'
-import { formatDate } from '@/lib/date'
+import { formatDate } from '@/lib/utils'
 import { useTenants } from '@/hooks/use-tenants'
 
 export default function TenantsPage() {
@@ -34,12 +34,12 @@ export default function TenantsPage() {
     trigger: createTenantTrigger,
     isMutating: createTenantIsMutating,
     error: createTenantError,
-  } = useMutation<TenantInsert>('/admin/tenants', 'POST')
+  } = useMutation<TenantInsert>('/api/admin/tenants', 'POST')
   const {
     trigger: deleteTenantTrigger,
     isMutating: deleteTenantIsMutating,
     error: deleteTenantError,
-  } = useMutation('/admin/tenants/:id', 'DELETE')
+  } = useMutation('/api/admin/tenants/:id', 'DELETE')
 
   const handleCreateTenant = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
