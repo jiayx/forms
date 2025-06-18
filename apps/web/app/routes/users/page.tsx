@@ -289,13 +289,13 @@ export default function UsersPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="edit-status">账户状态</Label>
+                <Label htmlFor="status">账户状态</Label>
                 <Select
                   name="status"
                   defaultValue={selectedUser ? (selectedUser.isActive ? 'active' : 'inactive') : 'active'}
                   required
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="status">
                     <SelectValue placeholder="选择账户状态" />
                   </SelectTrigger>
                   <SelectContent>

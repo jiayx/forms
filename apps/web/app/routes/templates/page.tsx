@@ -141,7 +141,7 @@ export default function TemplatesPage() {
               <div className="space-y-2">
                 <Label htmlFor="type">字段类型</Label>
                 <Select name="type" required>
-                  <SelectTrigger>
+                  <SelectTrigger id="type">
                     <SelectValue placeholder="选择字段类型" />
                   </SelectTrigger>
                   <SelectContent>
@@ -207,8 +207,8 @@ export default function TemplatesPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="edit-type">字段类型</Label>
-                  <Select name="type" defaultValue={editingTemplate.type} required>
-                    <SelectTrigger>
+                  <Select name="edit-type" defaultValue={editingTemplate.type} required>
+                    <SelectTrigger id="edit-type">
                       <SelectValue placeholder="选择字段类型" />
                     </SelectTrigger>
                     <SelectContent>

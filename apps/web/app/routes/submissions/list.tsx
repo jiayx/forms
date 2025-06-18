@@ -25,7 +25,7 @@ export default function SubmissionsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const formId = searchParams.get('form') || ''
 
-  const [selectedForm, setSelectedForm] = useState<string | undefined>(undefined)
+  const [selectedForm, setSelectedForm] = useState<string>('')
   useEffect(() => {
     setSelectedForm(formId)
   }, [formId])

@@ -96,7 +96,7 @@ export default function NewFormPage() {
                     所属租户 *
                   </Label>
                   <Select value={selectedTenant} onValueChange={setSelectedTenant} required>
-                    <SelectTrigger className="bg-background/50">
+                    <SelectTrigger id="tenant" className="bg-background/50">
                       <SelectValue placeholder="选择租户" />
                     </SelectTrigger>
                     <SelectContent>

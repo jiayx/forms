@@ -48,6 +48,7 @@ const getToken = async (): Promise<string> => {
       needRefresh = true
     } else {
       const now = Math.floor(Date.now() / 1000)
+      // 提前 90s 刷新
       needRefresh = now + 90 >= exp
     }
   } catch (err) {
@@ -59,12 +60,12 @@ const getToken = async (): Promise<string> => {
     return token
   }
 
-  // 刷新 token
   const refreshToken = localStorage.getItem('refreshToken')
   if (!refreshToken) {
     return token
   }
 
+  // 刷新 token
   try {
     return await lock.acquire(async () => {
       const resp = await fetch('/api/admin/refresh', {
@@ -152,13 +153,10 @@ export function useMutation<B = any, R = any>(url: string, method: Method) {
       const urlWithPathParams = arg.path ? fillPath(key, arg.path) : key
       const url = arg.query ? `${urlWithPathParams}?${new URLSearchParams(arg.query).toString()}` : urlWithPathParams
 
-      const token = localStorage.getItem('accessToken')
-
       const resp = await fetcher(url, {
         method: method,
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'X-Api-Key': `${token}` }),
           ...arg?.headers,
         },
         ...(arg?.body && { body: JSON.stringify(arg.body) }),
