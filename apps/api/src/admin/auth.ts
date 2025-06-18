@@ -58,7 +58,10 @@ auth.post('/login', async (c) => {
 
 auth.get('/current', requireLogin, async (c) => {
   const user = c.get('user')
-  return c.json({ user })
+  return c.json({
+    ...user,
+    password: undefined,
+  })
 })
 
 auth.post('/refresh', async (c) => {

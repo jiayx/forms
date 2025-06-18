@@ -12,11 +12,13 @@ import { Copy, Save, Trash2, ExternalLink, FileSpreadsheet, CopyIcon, ListIcon }
 import { useQuery, useMutation } from '@/hooks/use-rest'
 import type { TenantExt, TenantUpdate } from '@forms/db/zod'
 import { formatDate } from '@/lib/utils'
+import { useTenants } from '@/hooks/use-tenants'
 
 export default function TenantDetailPage({ params }: { params: { id: string } }) {
   const { state } = useLocation()
   const [isEditing, setIsEditing] = useState(state?.isEditing || false)
 
+  const { mutate: mutateList } = useTenants()
   const { data, error, isLoading, mutate } = useQuery<{ tenant: TenantExt }>(`/api/admin/tenants/${params.id}`)
 
   const { trigger: updateTenantTrigger } = useMutation<TenantUpdate>(`/api/admin/tenants/${params.id}`, 'PATCH')
@@ -63,6 +65,7 @@ export default function TenantDetailPage({ params }: { params: { id: string } })
       description: `租户 "${draft.name}" 信息已成功更新`,
     })
     mutate()
+    mutateList()
   }
 
   const handleDelete = async () => {

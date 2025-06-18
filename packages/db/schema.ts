@@ -40,7 +40,7 @@ export const fields = sqliteTable('fields', {
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
   },
-  (field) => [index('idx_filed_form_id').on(field.formId)]
+  (field) => [index('idx_field_form_id').on(field.formId)]
 )
 
 export const submissions = sqliteTable('submissions', {
