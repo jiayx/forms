@@ -18,11 +18,12 @@ export const forms = sqliteTable('forms', {
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     description: text('description'),
-    notifyEmails: text('notify_emails', { mode: 'json' }).$type<string[]>().notNull(),
+    allowedOrigins: text('allowed_origins', { mode: 'json' }).$type<string[]>(),
+    notifyEmails: text('notify_emails', { mode: 'json' }).$type<string[]>().notNull().default([]),
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
   },
-  (form) => [unique('unique_tenant_slug').on(form.tenantId, form.slug)]
+  (form) => [index('idx_form_tenant_id').on(form.tenantId)]
 )
 
 export const fields = sqliteTable('fields', {

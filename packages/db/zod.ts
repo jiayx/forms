@@ -82,3 +82,8 @@ export const formExtSchema = formSelectSchema.extend({
   submissionsCount: z.number(),
 })
 export type FormExt = z.infer<typeof formExtSchema>
+
+export const submissionExtSchema = submissionSelectSchema.extend({
+  form: formSelectSchema,
+})
+export type SubmissionSelectExt = z.infer<typeof submissionExtSchema>

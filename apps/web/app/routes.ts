@@ -15,6 +15,7 @@ export default [
     route('templates', 'routes/templates/page.tsx'),
 
     route('submissions', 'routes/submissions/list.tsx'),
+    route('forms/:formId/submissions/:id', 'routes/submissions/detail.tsx'),
 
     route('users', 'routes/users/page.tsx'),
   ]),

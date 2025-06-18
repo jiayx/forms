@@ -3,7 +3,7 @@ import { requireLogin } from '../middleware'
 import type { AdminEnv } from '../types'
 import { drizzle } from 'drizzle-orm/d1'
 import * as schema from '@forms/db/schema'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, like, desc } from 'drizzle-orm'
 import { getTenantId } from '../utils'
 import { FormSelect } from '@forms/db/zod'
 
@@ -37,16 +37,21 @@ submissionsApi.get('/forms/:id/submissions', formMiddleware, async (c) => {
 
   const keyword = c.req.query('keyword') || ''
 
+  const where = and(
+    eq(schema.submissions.formId, form.id),
+    keyword ? like(schema.submissions.data, `%${keyword}%`) : undefined
+  )
   const submissions = await drizzle(c.env.DB, { schema }).query.submissions.findMany({
     with: {
       form: true,
     },
-    where: and(eq(schema.submissions.formId, form.id), keyword ? eq(schema.submissions.data, keyword) : undefined),
+    where,
     limit,
     offset,
+    orderBy: [desc(schema.submissions.createdAt)],
   })
 
-  const total = await drizzle(c.env.DB).$count(schema.submissions, eq(schema.submissions.formId, form.id))
+  const total = await drizzle(c.env.DB).$count(schema.submissions, where)
 
   return c.json({ submissions, total })
 })

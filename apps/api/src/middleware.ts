@@ -9,11 +9,11 @@ export async function requireLogin(c: Context<AdminEnv>, next: Next) {
   const apiKey = c.req.header('X-Api-Key') || ''
   const payload = await verifyAccess(apiKey, c.env.JWT_SECRET)
   if (!payload || !payload.sub) {
-    return c.json({ error: 'Unauthorized' }, 401)
+    return c.json({ success: false, message: 'Unauthorized' }, 401)
   }
   const user = await drizzle(c.env.DB).select().from(adminUsers).where(eq(adminUsers.id, payload.sub)).get()
   if (!user) {
-    return c.json({ error: 'Unauthorized' }, 401)
+    return c.json({ success: false, message: 'Unauthorized' }, 401)
   }
   console.log('current user: ', user)
   c.set('user', user)
@@ -23,7 +23,7 @@ export async function requireLogin(c: Context<AdminEnv>, next: Next) {
 export async function requireAdmin(c: Context<AdminEnv>, next: Next) {
   const user = c.get('user')
   if (!user || user.tenantId) {
-    return c.json({ error: 'Forbidden' }, 403)
+    return c.json({ success: false, message: 'Forbidden' }, 403)
   }
   await next()
 }

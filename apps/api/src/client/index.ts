@@ -9,47 +9,47 @@ import { eq } from 'drizzle-orm'
 export const apiRoutes = new Hono<DBEnv>()
 
 // Dynamic CORS (per‑tenant) middleware
-apiRoutes.use(async (c, next) => {
-  const origin = c.req.header('Origin')
+apiRoutes.use('/forms/:id/submit', async (c, next) => {
+  const id = c.req.param('id') as string
+  const form = await getForm(c, id)
+  if (!form) {
+    return c.json({ success: false, message: 'Unknown form or invalid key' }, 400)
+  }
 
-  let allowed = false
-  if (origin) {
-    const tenant = await getTenant(c)
-    allowed = tenant?.allowedOrigins.find((o) => o.trim() === origin.trim()) !== undefined
+  const origin = c.req.header('Origin') as string
+  if (form.allowedOrigins && form.allowedOrigins.length > 0) {
+    const allowed = form.allowedOrigins.find((o) => o.trim() === origin.trim()) !== undefined
+    if (!allowed) {
+      return c.json({ success: false, message: 'Forbidden' }, 403)
+    }
   }
 
   return cors({
-    origin: (origin: string) => (allowed ? origin : ''),
+    origin: origin,
     allowMethods: ['GET', 'POST', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'X-API-Key'],
-    credentials: true,
+    allowHeaders: ['Content-Type', 'Accept'],
   })(c, next)
 })
 
 // POST /forms/:id/submit  – main endpoint
 apiRoutes.post('/forms/:id/submit', async (c) => {
   const id = c.req.param('id')
-  const apiKey = c.req.header('X-API-Key')
-  if (!id || !apiKey) {
-    return c.json({ error: 'Missing id or API key' }, 400)
+  const form = await getForm(c, id)
+  if (!form) {
+    return c.json({ success: false, message: 'Unknown form ' + id }, 400)
   }
 
   // Basic rate‑limit – demo (real‑world: Durable Objects / Turnstile)
   const ip = c.req.header('CF-Connecting-IP') || '0.0.0.0'
   // TODO: look up KV/do to enforce per‑ip quota
 
-  const form = await getForm(c, id, apiKey)
-  if (!form) {
-    return c.json({ error: 'Unknown form or invalid key' }, 400)
-  }
-
   // Validate payload against dynamic Zod schema
-  const body = await c.req.json()
-  const validator = buildValidator(form.fields)
-  const parsed = validator.safeParse(body)
-  if (!parsed.success) {
-    return c.json({ error: 'Validation failed', details: parsed.error.format() }, 400)
-  }
+  const data = await c.req.json()
+  // const validator = buildValidator(form.fields)
+  // const parsed = validator.safeParse(body)
+  // if (!parsed.success) {
+  //   return c.json({ success: false, message: 'Validation failed', details: parsed.error.format() }, 400)
+  // }
 
   await drizzle(c.env.DB)
     .insert(schema.submissions)
@@ -57,7 +57,7 @@ apiRoutes.post('/forms/:id/submit', async (c) => {
       formId: form.id,
       ip: ip,
       userAgent: c.req.header('User-Agent') || '-',
-      data: parsed.data,
+      data: data,
     })
 
   // TODO Async notify (very simplified – fire‑and‑forget fetch)
@@ -70,28 +70,20 @@ apiRoutes.post('/forms/:id/submit', async (c) => {
   //   }).catch(() => {})
   // }
 
-  return c.json({}, 201)
+  return c.json({ success: true }, 201)
 })
 
 // GET /api/forms/:id – expose field meta to FE
 apiRoutes.get('/forms/:id', async (c) => {
-  const form = await getForm(c, c.req.param('id') || '', c.req.header('X-API-Key') || '')
+  const form = await getForm(c, c.req.param('id'))
   if (!form) {
-    return c.json({ error: 'Unknown form or invalid key' }, 400)
+    return c.json({ success: false, message: 'Unknown form' }, 400)
   }
-  return c.json({ form })
+  return c.json({ success: true, form })
 })
 
-async function getTenant(c: Context<DBEnv>) {
-  const apiKey = c.req.header('X-API-Key') || ''
-  if (!apiKey) {
-    return null
-  }
-  return await drizzle(c.env.DB).select().from(schema.tenants).where(eq(schema.tenants.apiKey, apiKey)).get()
-}
-
-async function getForm(c: Context<DBEnv>, id: string, apiKey: string) {
-  if (!id || !apiKey) {
+async function getForm(c: Context<DBEnv>, id: string) {
+  if (!id) {
     return null
   }
   return await drizzle(c.env.DB, { schema }).query.forms.findFirst({

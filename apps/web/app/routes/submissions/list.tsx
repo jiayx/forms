@@ -176,7 +176,7 @@ export default function SubmissionsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Link to={`/submissions/${submission.id}`}>
+                      <Link to={`/forms/${submission.formId}/submissions/${submission.id}`}>
                         <Button variant="ghost" size="sm" className="gap-2">
                           <Eye className="h-4 w-4" />
                           查看详情

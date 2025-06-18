@@ -39,6 +39,7 @@ export default function NewFormPage() {
       name: formData.get('name') as string,
       slug: formData.get('slug') as string,
       tenantId: selectedTenant,
+      allowedOrigins: [],
       fields: [],
       notifyEmails: (formData.get('notifyEmails') as string).split('\n').filter(Boolean),
     }

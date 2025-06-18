@@ -16,3 +16,18 @@ export type WithJWT = {
 export type DBEnv = AppEnv<BaseEnv>
 
 export type AdminEnv = AppEnv<BaseEnv & WithJWT, { user: AdminUser }>
+
+export type Resp<T = any> = {
+  status: 'success' | 'error'
+  error?: {
+    code: string
+    message: string
+  }
+  data?: T
+  pagination?: {
+    total: number
+    page: number
+    pageSize: number
+    pages: number
+  }
+}
