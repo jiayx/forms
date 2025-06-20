@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Eye, Filter, Database } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { Filter, Database, ChevronDown } from 'lucide-react'
+import { useNavigate } from 'react-router'
 import {
   Pagination,
   PaginationContent,
@@ -15,10 +14,18 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { formatDate } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { getCoreRowModel, useReactTable, flexRender } from '@tanstack/react-table'
 import { useDebounce } from 'use-debounce'
 import { useSubmissions } from '@/hooks/use-submission'
 import { useForms } from '@/hooks/use-form'
+import { getColumns } from './table'
+import { cn } from '@/lib/utils'
 
 export default function SubmissionsPage({ params }: { params: { formId: string } }) {
   const navigate = useNavigate()
@@ -26,7 +33,7 @@ export default function SubmissionsPage({ params }: { params: { formId: string }
   const { data: forms } = useForms()
 
   useEffect(() => {
-    if (forms && forms.length > 0 && !forms.find((form) => form.id === params.formId)) {
+    if (forms && forms.length > 0) {
       navigate(`/forms/${forms[0].id}/submissions`)
     }
   }, [forms])
@@ -38,7 +45,7 @@ export default function SubmissionsPage({ params }: { params: { formId: string }
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
 
   const {
-    data: { list, pagination },
+    data: { list, pagination, fields },
     error,
     isError,
   } = useSubmissions(params.formId, {
@@ -51,6 +58,12 @@ export default function SubmissionsPage({ params }: { params: { formId: string }
 
   // 计算分页数据
   const totalPages = Math.ceil(total / pageSize)
+
+  const table = useReactTable({
+    data: submissions,
+    columns: getColumns(fields),
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   return (
     <div className="space-y-6">
@@ -99,14 +112,36 @@ export default function SubmissionsPage({ params }: { params: { formId: string }
         </div>
 
         <div className="flex ml-auto items-center gap-2">
-          <Button variant="default" onClick={() => {}}>
-            创建
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="ml-auto">
+                Columns <ChevronDown />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {table
+                .getAllColumns()
+                .filter((column) => column.getCanHide())
+                .map((column) => {
+                  return (
+                    <DropdownMenuCheckboxItem
+                      key={column.id}
+                      className="capitalize"
+                      checked={column.getIsVisible()}
+                      onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                      onSelect={(event) => event.preventDefault()}
+                    >
+                      {column.id}
+                    </DropdownMenuCheckboxItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       <Card>
-        <CardContent>
+        <CardContent className="p-0">
           {submissions.length === 0 ? (
             <div className="text-center py-12">
               <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-4">
@@ -118,14 +153,22 @@ export default function SubmissionsPage({ params }: { params: { formId: string }
           ) : (
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>表单</TableHead>
-                  <TableHead>租户</TableHead>
-                  <TableHead>提交时间</TableHead>
-                  <TableHead>IP 地址</TableHead>
-                  <TableHead>数据摘要</TableHead>
-                  <TableHead className="text-right">操作</TableHead>
-                </TableRow>
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id} className="">
+                    {hg.headers.map((h) => (
+                      <TableHead
+                        key={h.id}
+                        className={cn(
+                          (h.column.columnDef.meta as any)?.align === 'right' && 'text-right',
+                          'text-gray-800',
+                          'font-bold'
+                        )}
+                      >
+                        {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
               </TableHeader>
               <TableBody>
                 {isError && (
@@ -135,34 +178,16 @@ export default function SubmissionsPage({ params }: { params: { formId: string }
                     </TableCell>
                   </TableRow>
                 )}
-                {submissions.map((submission) => (
-                  <TableRow key={submission.id}>
-                    <TableCell className="font-medium">{submission.form.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{submission.user.name}</Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{formatDate(submission.createdAt)}</TableCell>
-                    <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">{submission.ip}</code>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate text-muted-foreground">
-                        {Object.entries(submission.data).map(([key, value]) => (
-                          <span key={key} className="mr-2">
-                            {key}: {String(value).substring(0, 20)}
-                            {String(value).length > 20 ? '...' : ''}
-                          </span>
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Link to={`/forms/${submission.formId}/submissions/${submission.id}`}>
-                        <Button variant="ghost" size="sm" className="gap-2">
-                          <Eye className="h-4 w-4" />
-                          查看详情
-                        </Button>
-                      </Link>
-                    </TableCell>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell
+                        key={cell.id}
+                        className={(cell.column.columnDef.meta as any)?.align === 'right' ? 'text-right' : ''}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
                   </TableRow>
                 ))}
               </TableBody>

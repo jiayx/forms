@@ -11,7 +11,11 @@ export type WithJWT = {
   JWT_SECRET: string
 }
 
-export type DBEnv = AppEnv<BaseEnv>
+export type DBEnv = AppEnv<
+  BaseEnv & {
+    RESEND_API_KEY: string
+  }
+>
 
 export type AdminEnv = AppEnv<
   BaseEnv & WithJWT,

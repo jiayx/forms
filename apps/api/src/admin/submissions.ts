@@ -44,6 +44,7 @@ submissionsApi.get('/submissions', formMiddleware, async (c) => {
   const submissions = await drizzle(c.env.DB, { schema }).query.submissions.findMany({
     with: {
       form: true,
+      user: true,
     },
     where,
     limit: pageSize,
@@ -53,10 +54,17 @@ submissionsApi.get('/submissions', formMiddleware, async (c) => {
 
   const total = await drizzle(c.env.DB).$count(schema.submissions, where)
 
+  const fields = await drizzle(c.env.DB)
+    .select({ name: schema.fields.name })
+    .from(schema.fields)
+    .where(eq(schema.fields.formId, form.id))
+    .all()
+
   return c.json(
     success({
       list: submissions,
       pagination: { page, pageSize, total } as Pagination,
+      fields,
     })
   )
 })

@@ -26,7 +26,7 @@ export async function clientLoader({ params }: { params: { id: string } }) {
 }
 
 export default function EditFormPage({ params }: { params: { id: string } }) {
-  const { data } = useFormDetail(params.id)
+  const { data, refetch } = useFormDetail(params.id)
   const form = data!
 
   const navigate = useNavigate()
@@ -62,6 +62,7 @@ export default function EditFormPage({ params }: { params: { id: string } }) {
         toast('表单已更新', {
           description: `表单 "${updatedForm.name}" 已成功更新`,
         })
+        refetch()
       },
     })
   }
@@ -135,7 +136,7 @@ export default function EditFormPage({ params }: { params: { id: string } }) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
-          <Tabs defaultValue="fields" className="w-full">
+          <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="basic">基本信息</TabsTrigger>
               <TabsTrigger value="fields">字段管理</TabsTrigger>

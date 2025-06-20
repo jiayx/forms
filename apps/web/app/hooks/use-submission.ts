@@ -1,4 +1,4 @@
-import type { SubmissionExt } from '@forms/db/zod'
+import type { FieldSelect, SubmissionExt } from '@forms/db/zod'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { fetcher } from '@/lib/fetcher'
 import type { SubmissionInsert } from '@forms/db/zod'
@@ -8,9 +8,12 @@ export const useSubmissions = (formId: string, params: Record<string, any> = {})
   return useQuery({
     queryKey: ['submissions', formId, params],
     queryFn: ({ queryKey: [, , params] }) =>
-      fetcher<{ list: SubmissionExt[]; pagination: Pagination }>('/api/forms/' + formId + '/submissions', {
-        params: params as Record<string, any>,
-      }),
+      fetcher<{ list: SubmissionExt[]; pagination: Pagination; fields: FieldSelect[] }>(
+        '/api/forms/' + formId + '/submissions',
+        {
+          params: params as Record<string, any>,
+        }
+      ),
     initialData: {
       list: [],
       pagination: {
@@ -18,6 +21,7 @@ export const useSubmissions = (formId: string, params: Record<string, any> = {})
         page: 1,
         pageSize: 10,
       },
+      fields: [],
     },
     enabled: !!formId,
   })

@@ -30,14 +30,14 @@ export default function SubmissionDetailPage({ params }: { params: { id: string;
     })
   }
 
-  const deleteSubmission = async () => {
+  const deleteSubmission = () => {
     if (confirm('确定要删除此提交记录吗？此操作不可撤销。')) {
       deleteSubmissionMutate(params.id, {
         onSuccess: () => {
           toast('提交记录已删除', {
             description: '提交记录已成功删除',
           })
-          navigate('/submissions')
+          navigate(`/forms/${form.id}/submissions`)
         },
         onError: () => {
           toast('提交记录删除失败', {
@@ -51,7 +51,7 @@ export default function SubmissionDetailPage({ params }: { params: { id: string;
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link to="/submissions">
+        <Link to={`/forms/${form.id}/submissions`}>
           <Button variant="ghost" size="sm" className="gap-2">
             <ArrowLeft className="h-4 w-4" />
             返回提交列表
