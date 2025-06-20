@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { adminRoutes } from './admin/route'
 import { ZodError } from 'zod/v4'
 import { apiRoutes } from './client/index'
+import { error } from '@forms/shared/schema'
 
 const app = new Hono()
 
@@ -16,12 +17,12 @@ app.onError((err, c) => {
   console.error('Uncaught error:', err)
   if (err instanceof ZodError) {
     const formatted = err.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join(', ')
-    return c.json({ error: formatted }, 400)
+    return c.json(error(formatted), 400)
   }
-  return c.json({ error: err instanceof Error ? err.message : 'Unknown error' }, 500)
+  return c.json(error(err instanceof Error ? err.message : 'Unknown error'), 500)
 })
 
-app.route('/api/admin', adminRoutes)
+app.route('/api', adminRoutes)
 app.route('/api', apiRoutes)
 
 export default app

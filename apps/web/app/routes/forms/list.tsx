@@ -1,30 +1,14 @@
-import { Link, useSearchParams } from 'react-router'
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Plus, Edit, Database } from 'lucide-react'
-import { useQuery } from '@/hooks/use-rest'
-import type { FormExt, TenantExt } from '@forms/db/zod'
 import { formatDate } from '@/lib/utils'
-import { useCurrentTenant } from '@/hooks/use-tenants'
+import { useForms } from '@/hooks/use-form'
 
 export default function FormsPage() {
-  const { currentTenant, setCurrentTenantId } = useCurrentTenant()
-
-  const [searchParams] = useSearchParams()
-  if (searchParams.get('tenant')) {
-    setCurrentTenantId(searchParams.get('tenant') || 'all')
-  }
-
-  const { data } = useQuery<{ forms: FormExt[] }>(
-    '/api/admin/forms',
-    currentTenant ? { tenantId: currentTenant.id } : undefined
-  )
-  const forms = data?.forms || []
-
-  const { data: tenantData } = useQuery<{ tenants: TenantExt[] }>('/api/admin/tenants')
-  const tenants = tenantData?.tenants || []
+  const { data: forms } = useForms()
 
   return (
     <div className="space-y-6">
@@ -45,9 +29,7 @@ export default function FormsPage() {
       <Card>
         <CardHeader>
           <CardTitle>表单列表</CardTitle>
-          <CardDescription>
-            {currentTenant ? `${currentTenant?.name} 共有 ${forms.length} 个表单` : `共有 ${forms.length} 个表单`}
-          </CardDescription>
+          <CardDescription>{`共有 ${forms.length} 个表单`}</CardDescription>
         </CardHeader>
         <CardContent>
           {forms.length === 0 ? (
@@ -56,9 +38,7 @@ export default function FormsPage() {
                 <Database className="h-12 w-12 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">暂无表单</h3>
-              <p className="text-muted-foreground mb-4">
-                {currentTenant ? '该租户还没有创建任何表单' : '还没有创建任何表单，点击上方按钮开始创建'}
-              </p>
+              <p className="text-muted-foreground mb-4">未创建任何表单，点击按钮开始创建</p>
               <Link to="/forms/new">
                 <Button>创建第一个表单</Button>
               </Link>
@@ -68,9 +48,10 @@ export default function FormsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>表单名称</TableHead>
-                  <TableHead>Slug</TableHead>
-                  <TableHead>所属租户</TableHead>
+                  <TableHead>所属用户</TableHead>
                   <TableHead>字段数</TableHead>
+                  <TableHead>允许的来源域名</TableHead>
+                  <TableHead>通知邮箱</TableHead>
                   <TableHead>提交数</TableHead>
                   <TableHead>更新时间</TableHead>
                   <TableHead className="text-right">操作</TableHead>
@@ -80,15 +61,30 @@ export default function FormsPage() {
                 {forms.map((form) => (
                   <TableRow key={form.id}>
                     <TableCell className="font-medium">{form.name}</TableCell>
+                    <TableCell>{form.user.name}</TableCell>
                     <TableCell>
-                      <code className="text-xs bg-muted px-2 py-1 rounded">{form.slug}</code>
-                    </TableCell>
-                    <TableCell>{form.tenant.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{form.fields?.length}</Badge>
+                      <Badge variant="outline">{form.fields?.length || 0}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{form.submissionsCount}</Badge>
+                      <div className="flex items-center gap-2">
+                        {form.allowedOrigins?.map((origin) => (
+                          <span key={origin} className="text-xs bg-muted px-2 py-1 rounded">
+                            {origin}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {form.notifyEmails?.map((email) => (
+                          <span key={email} className="text-xs bg-muted px-2 py-1 rounded">
+                            {email}
+                          </span>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{form.submissionsCount || 0}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(form.updatedAt)}</TableCell>
                     <TableCell className="text-right">
@@ -99,7 +95,7 @@ export default function FormsPage() {
                             编辑
                           </Button>
                         </Link>
-                        <Link to={`/submissions?form=${form.id}`}>
+                        <Link to={`/forms/${form.id}/submissions`}>
                           <Button variant="ghost" size="sm" className="gap-2">
                             <Database className="h-4 w-4" />
                             查看提交

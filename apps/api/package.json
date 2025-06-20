@@ -7,8 +7,9 @@
   },
   "dependencies": {
     "@cloudflare/workers-types": "^4.20250614.0",
-    "bcryptjs": "^3.0.2",
     "@forms/db": "workspace:*",
+    "@forms/shared": "workspace:*",
+    "bcryptjs": "^3.0.2",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
     "hono": "^4.7.11",

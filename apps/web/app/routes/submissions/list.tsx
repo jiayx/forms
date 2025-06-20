@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Eye, Filter, Database } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import {
   Pagination,
   PaginationContent,
@@ -15,62 +15,42 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination'
-import { useQuery } from '@/hooks/use-rest'
-import type { FormSelectExt, SubmissionSelect } from '@forms/db/zod'
 import { formatDate } from '@/lib/utils'
 import { useDebounce } from 'use-debounce'
-import { useCurrentTenant } from '@/hooks/use-tenants'
+import { useSubmissions } from '@/hooks/use-submission'
+import { useForms } from '@/hooks/use-form'
 
-export default function SubmissionsPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const formId = searchParams.get('form') || ''
+export default function SubmissionsPage({ params }: { params: { formId: string } }) {
+  const navigate = useNavigate()
 
-  const [selectedForm, setSelectedForm] = useState<string>('')
+  const { data: forms } = useForms()
+
   useEffect(() => {
-    setSelectedForm(formId)
-  }, [formId])
+    if (forms && forms.length > 0 && !forms.find((form) => form.id === params.formId)) {
+      navigate(`/forms/${forms[0].id}/submissions`)
+    }
+  }, [forms])
 
-  const { currentTenant } = useCurrentTenant()
-
-  const { data: formsData } = useQuery<{ forms: FormSelectExt[]; total: number }>(
-    '/api/admin/forms',
-    currentTenant?.id
-      ? {
-          tenantId: currentTenant?.id,
-        }
-      : undefined
-  )
-  const forms = formsData?.forms || []
-
-  // 分页状态
+  // 分页
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize] = useState(10)
   const [searchTerm, setSearchTerm] = useState('')
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500)
 
-  const { data: submissionsData, error } = useQuery<{ submissions: SubmissionSelect[]; total: number }>(
-    selectedForm ? `/api/admin/forms/${selectedForm}/submissions` : undefined,
-    {
-      page: currentPage,
-      pageSize,
-      keyword: debouncedSearchTerm,
-    }
-  )
-  const submissions = submissionsData?.submissions || []
-  const total = submissionsData?.total || 0
-  useEffect(() => {
-    if (!formsData?.forms || formsData?.forms.length === 0) return
-    if (selectedForm != formsData?.forms[0].id) {
-      setSearchParams({ form: formsData.forms[0].id })
-    }
-  }, [formsData?.forms])
+  const {
+    data: { list, pagination },
+    error,
+    isError,
+  } = useSubmissions(params.formId, {
+    page: currentPage,
+    pageSize,
+    keyword: debouncedSearchTerm,
+  })
+  const submissions = list
+  const total = pagination.total
 
   // 计算分页数据
   const totalPages = Math.ceil(total / pageSize)
-
-  const getFormName = (formId: string) => {
-    return forms.find((f) => f.id === formId)
-  }
 
   return (
     <div className="space-y-6">
@@ -89,9 +69,9 @@ export default function SubmissionsPage() {
             <span className="text-muted-foreground">暂无表单</span>
           ) : (
             <Select
-              value={selectedForm}
+              value={params.formId}
               onValueChange={(value) => {
-                setSearchParams({ form: value })
+                navigate(`/forms/${value}/submissions`)
               }}
             >
               <SelectTrigger className="w-[200px]">
@@ -148,18 +128,18 @@ export default function SubmissionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {error && (
+                {isError && (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                      Load failed: {error}
+                      Load failed: {error?.message}
                     </TableCell>
                   </TableRow>
                 )}
                 {submissions.map((submission) => (
                   <TableRow key={submission.id}>
-                    <TableCell className="font-medium">{getFormName(submission.formId)?.name}</TableCell>
+                    <TableCell className="font-medium">{submission.form.name}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{getFormName(submission.formId)?.tenant.name}</Badge>
+                      <Badge variant="outline">{submission.user.name}</Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(submission.createdAt)}</TableCell>
                     <TableCell>

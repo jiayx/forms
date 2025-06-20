@@ -1,20 +1,21 @@
-import { type Context, Hono } from 'hono'
-import { buildValidator } from '../utils'
+import { Hono } from 'hono'
 import { DBEnv } from '../types'
 import { cors } from 'hono/cors'
 import { drizzle } from 'drizzle-orm/d1'
 import * as schema from '@forms/db/schema'
 import { eq } from 'drizzle-orm'
+import { FormSelect } from '@forms/db/zod'
 
-export const apiRoutes = new Hono<DBEnv>()
+export const apiRoutes = new Hono<DBEnv & { Variables: { form: FormSelect } }>()
 
 // Dynamic CORS (per‑tenant) middleware
 apiRoutes.use('/forms/:id/submit', async (c, next) => {
   const id = c.req.param('id') as string
-  const form = await getForm(c, id)
+  const form = await drizzle(c.env.DB).select().from(schema.forms).where(eq(schema.forms.id, id)).get()
   if (!form) {
     return c.json({ success: false, message: 'Unknown form or invalid key' }, 400)
   }
+  c.set('form', form)
 
   const origin = c.req.header('Origin') as string
   if (form.allowedOrigins && form.allowedOrigins.length > 0) {
@@ -31,10 +32,10 @@ apiRoutes.use('/forms/:id/submit', async (c, next) => {
   })(c, next)
 })
 
-// POST /forms/:id/submit  – main endpoint
-apiRoutes.post('/forms/:id/submit', async (c) => {
+// POST /s/:id  id is form id
+apiRoutes.post('/s/:id', async (c) => {
   const id = c.req.param('id')
-  const form = await getForm(c, id)
+  const form = c.var.form
   if (!form) {
     return c.json({ success: false, message: 'Unknown form ' + id }, 400)
   }
@@ -55,6 +56,7 @@ apiRoutes.post('/forms/:id/submit', async (c) => {
     .insert(schema.submissions)
     .values({
       formId: form.id,
+      userId: form.userId,
       ip: ip,
       userAgent: c.req.header('User-Agent') || '-',
       data: data,
@@ -74,23 +76,16 @@ apiRoutes.post('/forms/:id/submit', async (c) => {
 })
 
 // GET /api/forms/:id – expose field meta to FE
-apiRoutes.get('/forms/:id', async (c) => {
-  const form = await getForm(c, c.req.param('id'))
+apiRoutes.get('/f/:id', async (c) => {
+  const id = c.req.param('id') as string
+  const form = await drizzle(c.env.DB, { schema }).query.forms.findFirst({
+    with: {
+      fields: true,
+    },
+    where: eq(schema.forms.id, id),
+  })
   if (!form) {
     return c.json({ success: false, message: 'Unknown form' }, 400)
   }
   return c.json({ success: true, form })
 })
-
-async function getForm(c: Context<DBEnv>, id: string) {
-  if (!id) {
-    return null
-  }
-  return await drizzle(c.env.DB, { schema }).query.forms.findFirst({
-    with: {
-      fields: true,
-      tenant: true,
-    },
-    where: eq(schema.forms.id, id),
-  })
-}

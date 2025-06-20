@@ -1,21 +1,20 @@
 import type React from 'react'
 
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
 import { FileText, Eye, EyeOff } from 'lucide-react'
 import { useLogin } from '@/hooks/use-auth'
+import { toast } from 'sonner'
+import { useNavigate } from 'react-router'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { toast } = useToast()
   const [showPassword, setShowPassword] = useState(false)
 
-  const { trigger: loginTrigger, isMutating: isLoginMutating } = useLogin()
+  const { mutate, isPending } = useLogin()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -23,24 +22,19 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
-
-    try {
-      const res = await loginTrigger({ body: { email, password } })
-      localStorage.setItem('accessToken', res.accessToken)
-      localStorage.setItem('refreshToken', res.refreshToken)
-      toast({
-        title: 'Login successful',
-        description: 'Welcome back to the form management system',
-      })
-      navigate('/tenants')
-    } catch (error: any) {
-      console.error('failed to login:', error)
-      toast({
-        title: 'Failed to login',
-        description: error.message,
-        variant: 'destructive',
-      })
-    }
+    mutate(
+      { email, password },
+      {
+        onSuccess: (data) => {
+          localStorage.setItem('accessToken', data.accessToken)
+          localStorage.setItem('refreshToken', data.refreshToken)
+          toast('Login successful', {
+            description: 'Welcome back to the form management system',
+          })
+          navigate('/')
+        },
+      }
+    )
   }
 
   return (
@@ -92,8 +86,8 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </div>
-              <Button type="submit" className="w-full" disabled={isLoginMutating}>
-                {isLoginMutating ? 'Logging in...' : 'Login'}
+              <Button type="submit" className="w-full" disabled={isPending}>
+                {isPending ? 'Logging in...' : 'Login'}
               </Button>
             </form>
           </CardContent>

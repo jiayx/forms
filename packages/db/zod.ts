@@ -1,13 +1,13 @@
 import { z } from 'zod/v4'
 import { createSelectSchema, createInsertSchema, createUpdateSchema } from 'drizzle-zod'
-import { tenants, forms, fields, submissions, fieldTemplates, adminUsers, adminRefreshTokens } from './schema'
+import { users, forms, fields, submissions, userRefreshTokens } from './schema'
 
-export const tenantSelectSchema = createSelectSchema(tenants)
-export const tenantInsertSchema = createInsertSchema(tenants)
-export const tenantUpdateSchema = createUpdateSchema(tenants)
-export type TenantSelect = z.infer<typeof tenantSelectSchema>
-export type TenantInsert = z.infer<typeof tenantInsertSchema>
-export type TenantUpdate = z.infer<typeof tenantUpdateSchema>
+export const userSelectSchema = createSelectSchema(users)
+export const userInsertSchema = createInsertSchema(users)
+export const userUpdateSchema = createUpdateSchema(users)
+export type UserSelect = z.infer<typeof userSelectSchema>
+export type UserInsert = z.infer<typeof userInsertSchema>
+export type UserUpdate = z.infer<typeof userUpdateSchema>
 
 export const formSelectSchema = createSelectSchema(forms)
 export const formInsertSchema = createInsertSchema(forms)
@@ -30,33 +30,18 @@ export type SubmissionSelect = z.infer<typeof submissionSelectSchema>
 export type SubmissionInsert = z.infer<typeof submissionInsertSchema>
 export type SubmissionUpdate = z.infer<typeof submissionUpdateSchema>
 
-export const fieldTemplateSelectSchema = createSelectSchema(fieldTemplates)
-export const fieldTemplateInsertSchema = createInsertSchema(fieldTemplates)
-export const fieldTemplateUpdateSchema = createUpdateSchema(fieldTemplates)
-export type FieldTemplateSelect = z.infer<typeof fieldTemplateSelectSchema>
-export type FieldTemplateInsert = z.infer<typeof fieldTemplateInsertSchema>
-export type FieldTemplateUpdate = z.infer<typeof fieldTemplateUpdateSchema>
-
-export const adminUserSelectSchema = createSelectSchema(adminUsers)
-export const adminUserInsertSchema = createInsertSchema(adminUsers)
-export const adminUserUpdateSchema = createUpdateSchema(adminUsers)
-export type AdminUserSelect = z.infer<typeof adminUserSelectSchema>
-export type AdminUserInsert = z.infer<typeof adminUserInsertSchema>
-export type AdminUserUpdate = z.infer<typeof adminUserUpdateSchema>
-
-export const adminRefreshTokenSelectSchema = createSelectSchema(adminRefreshTokens)
-export const adminRefreshTokenInsertSchema = createInsertSchema(adminRefreshTokens)
-export const adminRefreshTokenUpdateSchema = createUpdateSchema(adminRefreshTokens)
-
-export type AdminRefreshTokenSelect = z.infer<typeof adminRefreshTokenSelectSchema>
-export type AdminRefreshTokenInsert = z.infer<typeof adminRefreshTokenInsertSchema>
-export type AdminRefreshTokenUpdate = z.infer<typeof adminRefreshTokenUpdateSchema>
+export const userRefreshTokenSelectSchema = createSelectSchema(userRefreshTokens)
+export const userRefreshTokenInsertSchema = createInsertSchema(userRefreshTokens)
+export const userRefreshTokenUpdateSchema = createUpdateSchema(userRefreshTokens)
+export type UserRefreshTokenSelect = z.infer<typeof userRefreshTokenSelectSchema>
+export type UserRefreshTokenInsert = z.infer<typeof userRefreshTokenInsertSchema>
+export type UserRefreshTokenUpdate = z.infer<typeof userRefreshTokenUpdateSchema>
 
 // complex schemas
 export const formSelectExtSchema = formSelectSchema.extend({
   fields: z.array(fieldSelectSchema),
   submissionsCount: z.number(),
-  tenant: tenantSelectSchema,
+  user: userSelectSchema,
 })
 export type FormSelectExt = z.infer<typeof formSelectExtSchema>
 
@@ -70,14 +55,14 @@ export const formUpdateExtSchema = formUpdateSchema.extend({
 })
 export type FormUpdateExt = z.infer<typeof formUpdateExtSchema>
 
-export const tenantExtSchema = tenantSelectSchema.extend({
+export const userExtSchema = userSelectSchema.extend({
   forms: z.array(formSelectSchema),
   submissionsCount: z.number(),
 })
-export type TenantExt = z.infer<typeof tenantExtSchema>
+export type UserExt = z.infer<typeof userExtSchema>
 
 export const formExtSchema = formSelectSchema.extend({
-  tenant: tenantSelectSchema,
+  user: userSelectSchema,
   fields: z.array(fieldSelectSchema),
   submissionsCount: z.number(),
 })
@@ -85,5 +70,6 @@ export type FormExt = z.infer<typeof formExtSchema>
 
 export const submissionExtSchema = submissionSelectSchema.extend({
   form: formSelectSchema,
+  user: userSelectSchema,
 })
-export type SubmissionSelectExt = z.infer<typeof submissionExtSchema>
+export type SubmissionExt = z.infer<typeof submissionExtSchema>

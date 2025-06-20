@@ -2,106 +2,126 @@ import { Hono } from 'hono'
 import bcrypt from 'bcryptjs'
 import { SignJWT } from 'jose'
 import type { AdminEnv } from '../types'
-import { adminUsers, adminRefreshTokens } from '@forms/db/schema'
-import { AdminUserSelect, adminUserInsertSchema } from '@forms/db/zod'
+import { users, userRefreshTokens } from '@forms/db/schema'
+import { UserSelect } from '@forms/db/zod'
 import { eq, lt, and } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { requireLogin } from '../middleware'
+import { z } from 'zod/v4'
+import { success, error } from '@forms/shared/schema'
 
 const ACCESS_TTL = 60 * 15
 const REFRESH_TTL = 60 * 60 * 24 * 30
 
 export const auth = new Hono<AdminEnv>()
 
+export const loginUserSchema = z.object({
+  email: z.email({ message: 'Invalid email address' }),
+  password: z.string().min(6, { message: 'Password must be at least 6 characters long' }),
+})
+
+// parse name from email
+function parseNameFromEmail(email: string) {
+  return email.split('@')[0]
+}
+
 auth.post('/login', async (c) => {
   const db = drizzle(c.env.DB)
-  const parsed = adminUserInsertSchema.parse(await c.req.json())
+  const parsed = loginUserSchema.parse(await c.req.json())
   const { email, password } = parsed
-  let user = await db.select().from(adminUsers).where(eq(adminUsers.email, email)).get()
+  let user = await db.select().from(users).where(eq(users.email, email)).get()
   if (!user) {
-    const count = await db.$count(adminUsers)
+    const count = await db.$count(users)
     if (count === 0) {
       // create default admin user
       user = await db
-        .insert(adminUsers)
-        .values({ email, password: await bcrypt.hash(password, 10), isActive: true })
+        .insert(users)
+        .values({
+          email,
+          passwordHash: await bcrypt.hash(password, 10),
+          name: parseNameFromEmail(email),
+          role: 'admin',
+          isActive: true,
+        })
         .returning()
         .get()
-    } else {
-      return c.json({ error: 'Invalid credentials' }, 401)
     }
   }
 
   console.log('user login: ', user)
   if (!user || !user.isActive) {
-    return c.json({ error: 'Invalid credentials' }, 401)
+    return c.json(error('Invalid credentials'), 401)
   }
-  const ok = await bcrypt.compare(password, user.password)
+
+  const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) {
-    return c.json({ error: 'Invalid credentials' }, 401)
+    return c.json(error('Invalid credentials'), 401)
   }
+
   const now = new Date()
-  await db.update(adminUsers).set({ lastLoginAt: now.toISOString() }).where(eq(adminUsers.id, user.id))
+  await db.update(users).set({ lastLoginAt: now.toISOString() }).where(eq(users.id, user.id))
   const accessToken = await signAccess(user, c.env.JWT_SECRET)
   const refreshToken = crypto.randomUUID()
 
   const expiresAt = new Date(now.getTime() + REFRESH_TTL * 1000)
   await db
-    .insert(adminRefreshTokens)
+    .insert(userRefreshTokens)
     .values({ userId: user.id, token: refreshToken, expiresAt: expiresAt.toISOString() })
   // delete old refresh token
   await db
-    .delete(adminRefreshTokens)
-    .where(and(eq(adminRefreshTokens.userId, user.id), lt(adminRefreshTokens.expiresAt, now.toISOString())))
-  return c.json({ accessToken, refreshToken })
+    .delete(userRefreshTokens)
+    .where(and(eq(userRefreshTokens.userId, user.id), lt(userRefreshTokens.expiresAt, now.toISOString())))
+  return c.json(success({ accessToken, refreshToken }))
 })
 
 auth.get('/current', requireLogin, async (c) => {
-  const user = c.get('user')
-  return c.json({
-    ...user,
-    password: undefined,
-  })
+  const userId = c.var.user.id
+  const user = await drizzle(c.env.DB).select().from(users).where(eq(users.id, userId)).get()
+  return c.json(
+    success({
+      ...user,
+      passwordHash: undefined,
+    })
+  )
 })
 
 auth.post('/refresh', async (c) => {
   const { refreshToken } = await c.req.json()
   if (!refreshToken) {
-    return c.json({ error: 'Invalid token' }, 401)
+    return c.json(error('Invalid token'), 401)
   }
 
   const db = drizzle(c.env.DB)
-  const token = await db.select().from(adminRefreshTokens).where(eq(adminRefreshTokens.token, refreshToken)).get()
+  const token = await db.select().from(userRefreshTokens).where(eq(userRefreshTokens.token, refreshToken)).get()
   if (!token) {
-    return c.json({ error: 'Invalid token' }, 401)
+    return c.json(error('Invalid token'), 401)
   }
 
   const now = new Date()
   const expiresAt = new Date(token.expiresAt)
   if (expiresAt < now) {
-    return c.json({ error: 'Invalid token' }, 401)
+    return c.json(error('Invalid token'), 401)
   }
 
-  const user = await db.select().from(adminUsers).where(eq(adminUsers.id, token.userId)).get()
+  const user = await db.select().from(users).where(eq(users.id, token.userId)).get()
   if (!user || !user.isActive) {
-    return c.json({ error: 'Invalid token' }, 401)
+    return c.json(error('Invalid token'), 401)
   }
 
   const accessToken = await signAccess(user, c.env.JWT_SECRET)
-  return c.json({ accessToken })
+  return c.json(success({ accessToken }))
 })
 
 auth.post('/logout', async (c) => {
   const { refreshToken } = await c.req.json()
-  await drizzle(c.env.DB).delete(adminRefreshTokens).where(eq(adminRefreshTokens.token, refreshToken))
-  return c.json({})
+  await drizzle(c.env.DB).delete(userRefreshTokens).where(eq(userRefreshTokens.token, refreshToken))
+  return c.json(success())
 })
 
-async function signAccess(user: AdminUserSelect, secret: string) {
+async function signAccess(user: UserSelect, secret: string) {
   const payload: any = {
     sub: user.id,
-    role: user.tenantId ? 'user' : 'admin',
-    tenantId: user.tenantId,
+    role: user.role,
   }
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })

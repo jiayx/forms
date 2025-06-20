@@ -1,6 +1,4 @@
-import { AdminUser } from '@prisma/client'
-
-export type Env<B = {}, V = {}> = {
+export type AppEnv<B = {}, V = {}> = {
   Bindings: B
   Variables: V
 }
@@ -15,19 +13,13 @@ export type WithJWT = {
 
 export type DBEnv = AppEnv<BaseEnv>
 
-export type AdminEnv = AppEnv<BaseEnv & WithJWT, { user: AdminUser }>
-
-export type Resp<T = any> = {
-  status: 'success' | 'error'
-  error?: {
-    code: string
-    message: string
+export type AdminEnv = AppEnv<
+  BaseEnv & WithJWT,
+  {
+    user: {
+      id: string
+      targetId: string | undefined
+      role: 'admin' | 'user'
+    }
   }
-  data?: T
-  pagination?: {
-    total: number
-    page: number
-    pageSize: number
-    pages: number
-  }
-}
+>

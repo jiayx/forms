@@ -3,68 +3,48 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { useToast } from '@/hooks/use-toast'
 import { ArrowLeft, Copy, Trash2, Flag } from 'lucide-react'
-import { fetcher } from '@/hooks/use-rest'
-import type { SubmissionSelectExt } from '@forms/db/zod'
 import { formatDate } from '@/lib/utils'
-import { useMutation } from '@/hooks/use-rest'
+import { useSubmissionDetail, useDeleteSubmission } from '@/hooks/use-submission'
+import { toast } from 'sonner'
+import { queryClient } from '@/lib/query-client'
+import { submissionDetailOption } from '@/hooks/use-submission'
 
 export async function clientLoader({ params }: { params: { id: string; formId: string } }) {
-  const resp = await fetcher(`/api/admin/forms/${params.formId}/submissions/${params.id}`)
-  return (await resp.json()) as { submission: SubmissionSelectExt }
+  await queryClient.ensureQueryData(submissionDetailOption(params.formId, params.id))
 }
 
-export default function SubmissionDetailPage({
-  params,
-  loaderData,
-}: {
-  params: { id: string; formId: string }
-  loaderData: { submission: SubmissionSelectExt }
-}) {
-  const { submission } = loaderData
-  const form = submission.form
+export default function SubmissionDetailPage({ params }: { params: { id: string; formId: string } }) {
   const navigate = useNavigate()
 
-  const { toast } = useToast()
+  const { data } = useSubmissionDetail(params.formId, params.id)
+  const submission = data!
+  const form = submission.form
 
-  const getTenantName = () => {
-    if (!form) return '未知租户'
-    return form.name
-  }
-
-  const { trigger: deleteSubmissionTrigger } = useMutation(
-    `/api/admin/forms/${params.formId}/submissions/${params.id}`,
-    'DELETE'
-  )
+  const { mutate: deleteSubmissionMutate } = useDeleteSubmission(params.formId)
 
   const copyData = () => {
     navigator.clipboard.writeText(JSON.stringify(submission.data, null, 2))
-    toast({
-      title: '数据已复制',
+    toast('数据已复制', {
       description: '提交数据已复制到剪贴板',
     })
   }
 
   const deleteSubmission = async () => {
     if (confirm('确定要删除此提交记录吗？此操作不可撤销。')) {
-      toast({
-        title: '提交记录已删除',
-        description: '提交记录已成功删除',
-        variant: 'destructive',
+      deleteSubmissionMutate(params.id, {
+        onSuccess: () => {
+          toast('提交记录已删除', {
+            description: '提交记录已成功删除',
+          })
+          navigate('/submissions')
+        },
+        onError: () => {
+          toast('提交记录删除失败', {
+            description: '提交记录删除失败',
+          })
+        },
       })
-      try {
-        await deleteSubmissionTrigger({ path: { id: params.id, formId: params.formId } })
-      } catch (error) {
-        console.error(error)
-        toast({
-          title: '提交记录删除失败',
-          description: '提交记录删除失败',
-          variant: 'destructive',
-        })
-        return
-      }
-      navigate('/submissions')
     }
   }
 
@@ -166,8 +146,8 @@ export default function SubmissionDetailPage({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <div className="text-sm font-medium">租户</div>
-                <div className="p-2 bg-muted rounded-md">{getTenantName()}</div>
+                <div className="text-sm font-medium">所属用户</div>
+                <div className="p-2 bg-muted rounded-md">{submission.user.name}</div>
               </div>
 
               <div className="space-y-2">

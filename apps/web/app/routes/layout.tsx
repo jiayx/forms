@@ -4,31 +4,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ModeToggle } from '@/components/mode-toggle'
-import { Users, FileText, Settings, Database, Building2 } from 'lucide-react'
+import { Users, FileText, Settings } from 'lucide-react'
 import { useLogout, useUser } from '@/hooks/use-auth'
-import { useTenants, useCurrentTenant } from '@/hooks/use-tenants'
+import { useUsers } from '@/hooks/use-user'
+import { useImpersonateId, setImpersonateId, ALL_USER } from '@/hooks/use-impersonate'
 
 const navigation = [
-  { name: '租户管理', href: '/tenants', icon: Building2 },
   { name: '表单管理', href: '/forms', icon: FileText },
-  { name: '字段模板', href: '/templates', icon: Settings },
-  { name: '提交记录', href: '/submissions', icon: Database },
   { name: '用户管理', href: '/users', icon: Users },
 ]
 
 export default function Layout() {
   const location = useLocation()
   const pathname = location.pathname
-
-  const { trigger } = useLogout()
   const navigate = useNavigate()
-  const { data } = useUser()
-  const user = data?.user
 
-  const { data: tenantsData } = useTenants()
-  const tenants = tenantsData?.tenants || []
+  const { mutate: logoutMutate } = useLogout()
+  const { data: user } = useUser()
+  const { data: users } = useUsers()
+  const { data: impersonateId } = useImpersonateId()
 
-  const { currentTenant, setCurrentTenantId } = useCurrentTenant()
+  const handleLogout = () => {
+    logoutMutate(undefined, {
+      onSuccess: () => {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        navigate('/login')
+      },
+    })
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -63,17 +67,16 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* 租户选择器 */}
-            {!user?.tenantId && (
-              <Select value={currentTenant?.id || 'all'} onValueChange={setCurrentTenantId}>
+            {user?.role === 'admin' && (
+              <Select value={impersonateId || ''} onValueChange={setImpersonateId}>
                 <SelectTrigger className="w-[180px] bg-background">
-                  <SelectValue placeholder="选择租户" />
+                  <SelectValue placeholder="选择用户" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">所有租户</SelectItem>
-                  {tenants.map((tenant) => (
-                    <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.name}
+                  <SelectItem value={ALL_USER}>所有用户</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -95,20 +98,13 @@ export default function Layout() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuItem>
                   <Users className="mr-2 h-4 w-4" />
-                  <span>{user?.email || ''} 个人设置</span>
+                  <span>{user?.name}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await trigger({
-                      body: {
-                        refreshToken: localStorage.getItem('refreshToken') || '',
-                      },
-                    })
-                    localStorage.removeItem('accessToken')
-                    localStorage.removeItem('refreshToken')
-                    navigate('/login')
-                  }}
-                >
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>个人设置</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <span>退出登录</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>

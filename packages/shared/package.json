@@ -1,0 +1,18 @@
+{
+  "name": "@forms/shared",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.12.1",
+  "dependencies": {
+    "@forms/db": "workspace:*",
+    "nanoid": "^5.1.5",
+    "zod": "^3.25.64"
+  }
+}

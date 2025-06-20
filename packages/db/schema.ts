@@ -1,43 +1,48 @@
 import { sql, relations } from 'drizzle-orm'
-import { integer, index, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core'
-import { v4 as uuidv4 } from 'uuid'
+import { integer, index, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { nanoid } from '@forms/shared'
 
-export const tenants = sqliteTable('tenants', {
-  id: text('id').primaryKey().notNull().$default(() => uuidv4()),
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey().notNull().$default(() => nanoid()),
+  email: text('email').notNull().unique(),
   name: text('name').notNull(),
-  domain: text('domain').notNull(),
-  apiKey: text('api_key').notNull().unique().default(''),
-  allowedOrigins: text('allowed_origins', { mode: 'json' }).$type<string[]>().notNull(),
+  passwordHash: text('password_hash').notNull(),
+  role: text('role', { enum: ['admin', 'user'] }).notNull().default('user'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  lastLoginAt: text('last_login_at'),
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
 })
 
+export const userRefreshTokens = sqliteTable('user_refresh_tokens', {
+  id: text('id').primaryKey().notNull().$default(() => nanoid()),
+  userId: text('user_id').notNull().references(() => users.id),
+  token: text('token').notNull().unique(),
+  expiresAt: text('expires_at').notNull(),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (token) => [index('idx_user_refresh_token_user_id').on(token.userId, token.expiresAt)])
+
 export const forms = sqliteTable('forms', {
-    id: text('id').primaryKey().notNull().$default(() => uuidv4()),
-    tenantId: text('tenant_id').notNull().references(() => tenants.id),
+    id: text('id').primaryKey().notNull().$default(() => nanoid()),
+    userId: text('user_id').notNull().references(() => users.id).default(""),
     name: text('name').notNull(),
-    slug: text('slug').notNull(),
     description: text('description'),
     allowedOrigins: text('allowed_origins', { mode: 'json' }).$type<string[]>(),
     notifyEmails: text('notify_emails', { mode: 'json' }).$type<string[]>().notNull().default([]),
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
   },
-  (form) => [index('idx_form_tenant_id').on(form.tenantId)]
+  (form) => [index('idx_form_user_id').on(form.userId, form.createdAt)]
 )
 
 export const fields = sqliteTable('fields', {
-    id: text('id').primaryKey().notNull().$default(() => uuidv4()),
+    id: text('id').primaryKey().notNull().$default(() => nanoid()),
     formId: text('form_id').notNull(),
     name: text('name').notNull(),
-    label: text('label').notNull(),
     type: text('type').notNull(),
     required: integer('required', { mode: 'boolean' }).notNull().default(false),
     options: text('options', { mode: 'json' }).$type<string[]>(),
-    placeholder: text('placeholder'),
-    order: integer('order').notNull(),
     validationRegex: text('validation_regex'),
-    templateId: text('template_id'),
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
   },
@@ -45,56 +50,28 @@ export const fields = sqliteTable('fields', {
 )
 
 export const submissions = sqliteTable('submissions', {
-    id: text('id').primaryKey().notNull().$default(() => uuidv4()),
-    formId: text('form_id').notNull(),
+    id: text('id').primaryKey().notNull().$default(() => nanoid()),
+    userId: text('user_id').notNull().references(() => users.id),
+    formId: text('form_id').notNull().references(() => forms.id),
     ip: text('ip').notNull(),
     userAgent: text('user_agent'),
     data: text('data', { mode: 'json' }).$type<Record<string, any>>().notNull(),
     createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
   },
-  (submission) => [index('idx_submission_form_id').on(submission.formId)]
+  (submission) => [index('idx_submission_user_id').on(submission.userId, submission.formId)]
 )
-
-export const fieldTemplates = sqliteTable('field_templates', {
-  id: text('id').primaryKey().notNull().$default(() => uuidv4()),
-  name: text('name').notNull(),
-  label: text('label').notNull(),
-  type: text('type', { enum: ['text', 'email', 'number', 'select', 'textarea', 'checkbox', 'radio'] }).notNull(),
-  options: text('options', { mode: 'json' }).$type<string[]>(),
-  placeholder: text('placeholder'),
-  validationRegex: text('validation_regex'),
-  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`).$onUpdate(() => new Date().toISOString()),
-})
-
-export const adminUsers = sqliteTable('admin_users', {
-  id: text('id').primaryKey().notNull().$default(() => uuidv4()),
-  email: text('email').notNull().unique(),
-  password: text('password').notNull(),
-  tenantId: text('tenant_id'),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-  lastLoginAt: text('last_login_at'),
-})
-
-export const adminRefreshTokens = sqliteTable('admin_refresh_tokens', {
-  id: text('id').primaryKey().notNull().$default(() => uuidv4()),
-  userId: text('user_id').notNull(),
-  token: text('token').notNull().unique(),
-  expiresAt: text('expires_at').notNull(),
-  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
-})
 
 // relations
 
-export const tenantRelations = relations(tenants, ({ many }) => ({
+export const userRelations = relations(users, ({ many }) => ({
   forms: many(forms),
 }))
 
 export const formRelations = relations(forms, ({ one, many }) => ({
-  tenant: one(tenants, {
-    fields: [forms.tenantId],
-    references: [tenants.id],
+  user: one(users, {
+    fields: [forms.userId],
+    references: [users.id],
   }),
   fields: many(fields),
   submissions: many(submissions),
@@ -111,5 +88,9 @@ export const submissionRelations = relations(submissions, ({ one }) => ({
   form: one(forms, {
     fields: [submissions.formId],
     references: [forms.id],
+  }),
+  user: one(users, {
+    fields: [submissions.userId],
+    references: [users.id],
   }),
 }))
