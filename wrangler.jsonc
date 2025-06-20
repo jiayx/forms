@@ -6,7 +6,7 @@
     {
       "binding": "DB",
       "database_name": "forms",
-      "database_id": "3590e9ad-259a-4a36-8c56-90fc2c0a0c36",
+      "database_id": "b6a32ef0-f545-4ce8-b828-2253b47ce224",
       "migrations_dir": "packages/db/migrations"
     }
   ],

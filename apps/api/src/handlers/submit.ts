@@ -7,12 +7,13 @@ import { eq } from 'drizzle-orm'
 import { FormSelect } from '@forms/db/zod'
 import { Resend } from 'resend'
 
-export const apiRoutes = new Hono<DBEnv & { Variables: { form: FormSelect } }>()
+export const submitApi = new Hono<DBEnv & { Variables: { form: FormSelect } }>()
 
 // Dynamic CORS (per‑tenant) middleware
-apiRoutes.use('/s/:id', async (c, next) => {
+submitApi.use('/s/:id', async (c, next) => {
   const id = c.req.param('id') as string
   const form = await drizzle(c.env.DB).select().from(schema.forms).where(eq(schema.forms.id, id)).get()
+  console.log('form', id, form)
   if (!form) {
     return c.json({ success: false, message: 'Unknown form or invalid key' }, 400)
   }
@@ -34,7 +35,7 @@ apiRoutes.use('/s/:id', async (c, next) => {
 })
 
 // POST /s/:id  id is form id
-apiRoutes.post('/s/:id', async (c) => {
+submitApi.post('/s/:id', async (c) => {
   const form = c.var.form
   // Basic rate‑limit – demo (real‑world: Durable Objects / Turnstile)
   const ip = c.req.header('CF-Connecting-IP') || '0.0.0.0'
@@ -42,11 +43,11 @@ apiRoutes.post('/s/:id', async (c) => {
 
   // Validate payload against dynamic Zod schema
   const data = await c.req.json()
-  if (Object.keys(data).length === 0) {
+  const fields = Object.keys(data)
+  if (fields.length === 0) {
     return c.json({ success: false, message: 'No data' }, 400)
   }
 
-  const fields = Object.keys(data)
   for (const field of fields) {
     if (data[field].length > 10000) {
       return c.json({ success: false, message: 'Data too large' }, 400)
@@ -100,7 +101,7 @@ apiRoutes.post('/s/:id', async (c) => {
 })
 
 // GET /api/forms/:id – expose field meta to FE
-apiRoutes.get('/f/:id', async (c) => {
+submitApi.get('/f/:id', async (c) => {
   const id = c.req.param('id') as string
   const form = await drizzle(c.env.DB, { schema }).query.forms.findFirst({
     with: {

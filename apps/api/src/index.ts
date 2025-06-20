@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
-import { adminRoutes } from './admin/route'
+import { router } from './handlers/route'
 import { ZodError } from 'zod/v4'
-import { apiRoutes } from './client/index'
 import { error } from '@forms/shared/schema'
 
 const app = new Hono()
@@ -22,7 +21,6 @@ app.onError((err, c) => {
   return c.json(error(err instanceof Error ? err.message : 'Unknown error'), 500)
 })
 
-app.route('/api', adminRoutes)
-app.route('/api', apiRoutes)
+app.route('/api', router)
 
 export default app

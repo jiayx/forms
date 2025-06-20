@@ -2,7 +2,6 @@
   "name": "@forms/db",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "gen": "drizzle-kit generate",
     "push:local": "drizzle-kit push --config ./drizzle.local.config.ts",

@@ -13,7 +13,7 @@ import { success, error } from '@forms/shared/schema'
 const ACCESS_TTL = 60 * 15
 const REFRESH_TTL = 60 * 60 * 24 * 30
 
-export const auth = new Hono<AdminEnv>()
+export const authApi = new Hono<AdminEnv>()
 
 export const loginUserSchema = z.object({
   email: z.email({ message: 'Invalid email address' }),
@@ -25,7 +25,7 @@ function parseNameFromEmail(email: string) {
   return email.split('@')[0]
 }
 
-auth.post('/login', async (c) => {
+authApi.post('/login', async (c) => {
   const db = drizzle(c.env.DB)
   const parsed = loginUserSchema.parse(await c.req.json())
   const { email, password } = parsed
@@ -74,9 +74,12 @@ auth.post('/login', async (c) => {
   return c.json(success({ accessToken, refreshToken }))
 })
 
-auth.get('/current', requireLogin, async (c) => {
+authApi.get('/current', requireLogin, async (c) => {
   const userId = c.var.user.id
   const user = await drizzle(c.env.DB).select().from(users).where(eq(users.id, userId)).get()
+  if (!user || !user.isActive) {
+    return c.json(error('User not found'), 401)
+  }
   return c.json(
     success({
       ...user,
@@ -85,7 +88,7 @@ auth.get('/current', requireLogin, async (c) => {
   )
 })
 
-auth.post('/refresh', async (c) => {
+authApi.post('/refresh', async (c) => {
   const { refreshToken } = await c.req.json()
   if (!refreshToken) {
     return c.json(error('Invalid token'), 401)
@@ -112,7 +115,7 @@ auth.post('/refresh', async (c) => {
   return c.json(success({ accessToken }))
 })
 
-auth.post('/logout', async (c) => {
+authApi.post('/logout', async (c) => {
   const { refreshToken } = await c.req.json()
   await drizzle(c.env.DB).delete(userRefreshTokens).where(eq(userRefreshTokens.token, refreshToken))
   return c.json(success())

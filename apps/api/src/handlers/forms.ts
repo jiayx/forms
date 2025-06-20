@@ -19,13 +19,14 @@ formsApi.get('/', async (c) => {
   const forms = await db.query.forms.findMany({
     with: {
       user: true,
+      fields: true,
     },
     where: targetId ? eq(schema.forms.userId, targetId) : undefined,
     extras: {
       submissionsCount: sql<number>`(
         select count(*)
           from ${schema.submissions} as s
-         where s.form_id = ${schema.forms.id}
+          where s.form_id = forms.id
       )`.as('submissionsCount'), // workaround for drizzle bug. see https://github.com/drizzle-team/drizzle-orm/issues/4164
       // submissionsCount: db.$count(schema.submission, eq(schema.submission.formId, schema.form.id)).as("submissionsCount"),
     },
