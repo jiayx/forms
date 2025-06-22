@@ -61,7 +61,7 @@ export async function fetcher<T = unknown>(
   // HTTP 4xx/5xx
   if (!res.ok) {
     const info: ErrorRes = await res.json()
-    console.error('fetch err11or:', info)
+    console.error('fetch error:', info)
     throw new ApiError(res.statusText, res.status, info)
   }
 

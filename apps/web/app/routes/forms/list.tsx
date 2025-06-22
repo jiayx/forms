@@ -60,7 +60,9 @@ export default function FormsPage() {
               <TableBody>
                 {forms.map((form) => (
                   <TableRow key={form.id}>
-                    <TableCell className="font-medium">{form.name}</TableCell>
+                    <TableCell className="font-medium">
+                      <Link to={`/forms/${form.id}/submissions`}>{form.name}</Link>
+                    </TableCell>
                     <TableCell>{form.user.name}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{form.fields?.length || 0}</Badge>

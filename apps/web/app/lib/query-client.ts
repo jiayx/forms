@@ -4,10 +4,8 @@ import type { ErrorRes } from '@forms/shared/schema'
 import { ApiError } from '@/lib/fetcher'
 
 const errorHandler = (e: unknown) => {
-  console.error('query error:', e)
   const err = e as ApiError<ErrorRes>
   if (err.status === 401) {
-    console.error('query error 401:', e)
     // 跳转到登录页（带返回路径）
     window.location.href = '/login'
   } else {
@@ -24,4 +22,12 @@ export const queryClient = new QueryClient({
   mutationCache: new MutationCache({
     onError: errorHandler,
   }),
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const err = error as ApiError<ErrorRes>
+        return failureCount < 3 && err.status !== 401
+      },
+    },
+  },
 })

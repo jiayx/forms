@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "api:dev": "wrangler dev",
-    "api:deploy": "pnpm --filter api run deploy",
     "web:dev": "pnpm --filter web run dev",
     "web:build": "pnpm --filter web run build",
     "migrate:gen": "pnpm --filter db run gen",
