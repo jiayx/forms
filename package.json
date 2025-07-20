@@ -13,8 +13,7 @@
     "deploy": "pnpm build:web && wrangler deploy --minify"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "jiayx",
   "packageManager": "pnpm@10.12.1",
   "devDependencies": {
     "wrangler": "^4.20.0"
