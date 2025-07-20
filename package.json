@@ -4,13 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "api:dev": "wrangler dev",
-    "web:dev": "pnpm --filter web run dev",
-    "web:build": "pnpm --filter web run build",
+    "dev:api": "wrangler dev",
+    "dev:web": "pnpm --filter web run dev",
+    "build:web": "pnpm --filter web run build",
     "migrate:gen": "pnpm --filter db run gen",
     "migrate:local": "pnpm migrate:gen && wrangler d1 migrations apply forms",
     "migrate:remote": "pnpm migrate:gen && wrangler d1 migrations apply forms --remote",
-    "deploy": "pnpm web:build && wrangler deploy --minify"
+    "deploy": "pnpm build:web && wrangler deploy --minify"
   },
   "keywords": [],
   "author": "",
